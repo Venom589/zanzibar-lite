@@ -1,98 +1,259 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Zanzibar Lite
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-oriented, lightweight implementation inspired by Google’s Zanzibar system for **fine-grained, relationship-based authorization (ReBAC)**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This project demonstrates how to build a scalable permission system capable of handling complex access control logic across users, resources, and hierarchies.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Why This Project Exists
 
-## Project setup
+Traditional RBAC (Role-Based Access Control) struggles when:
 
-```bash
-$ npm install
+* Permissions depend on relationships (e.g., user is editor via a team)
+* Resources are hierarchical (organization → project → document)
+* Access logic is dynamic and context-driven
+
+**Zanzibar Lite solves this using relationship graphs.**
+
+---
+
+## 🧠 Core Idea (ReBAC)
+
+Instead of static roles, we define relationships:
+
+```id="c1a2x9"
+user → relation → resource
 ```
 
-## Compile and run the project
+Example:
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```id="f93jd1"
+user:64f1a2b9c8d123456789abcd → viewer → document:abc123def456
+user:64f1a2b9c8d123456789abcd → member → organization:org789xyz
+organization:org789xyz → owns → document:abc123def456
 ```
 
-## Run tests
+Permissions are computed dynamically via graph traversal.
 
-```bash
-# unit tests
-$ npm run test
+---
 
-# e2e tests
-$ npm run test:e2e
+## 🏗️ System Architecture
 
-# test coverage
-$ npm run test:cov
+```id="m9q2ls"
+                ┌──────────────┐
+                │   Client     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │   API Layer  │
+                └──────┬───────┘
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+┌─────────────────┐        ┌─────────────────┐
+│ Relationship DB │        │ Permission Eval │
+│ (Tuples Store)  │        │ Engine          │
+└─────────────────┘        └─────────────────┘
+                                   │
+                                   ▼
+                          Decision (ALLOW/DENY)
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 📦 Relationship Tuple Model
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+All permissions are derived from tuples:
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```id="tup123"
+(object, relation, subject)
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Example:
 
-## Resources
+```id="tup456"
+(document:abc123def456, viewer, user:64f1a2b9c8d123456789abcd)
+(document:abc123def456, editor, user:64f1a2b9c8d123456789999)
+(organization:org789xyz, member, user:64f1a2b9c8d123456789abcd)
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 🔐 Permission Evaluation Logic
 
-## Support
+Example rule:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```id="rule001"
+can_view(document):
+    viewer OR editor OR owner
+```
 
-## Stay in touch
+Evaluation strategy:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+* Direct relationship lookup
+* Indirect inheritance (via organization/team)
+* Recursive graph traversal
+* Early exit for performance
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## ⚙️ Tech Stack
+
+* **Runtime:** Node.js
+* **ODM:** Mongoose
+* **Database:** MongoDB
+* **Architecture:** Modular service-based design
+* **Testing:** Jest (recommended)
+
+---
+
+## 📂 Project Structure
+
+```id="str001"
+src/
+├── controllers/      # API handlers
+├── services/         # Business logic
+├── models/           # Mongoose schemas
+├── routes/           # API routes
+├── engine/           # Permission evaluation core
+└── utils/            # Helpers
+
+config/
+tests/
+```
+
+---
+
+## 🔌 API Design (Example)
+
+### Add Relationship
+
+```http id="api001"
+POST /relations
+```
+
+```json id="api002"
+{
+  "object": "document:abc123def456",
+  "relation": "viewer",
+  "subject": "user:64f1a2b9c8d123456789abcd"
+}
+```
+
+---
+
+### Check Permission
+
+```http id="api003"
+POST /check
+```
+
+```json id="api004"
+{
+  "subject": "user:64f1a2b9c8d123456789abcd",
+  "relation": "view",
+  "object": "document:abc123def456"
+}
+```
+
+Response:
+
+```json id="api005"
+{
+  "allowed": true
+}
+```
+
+---
+
+## ▶️ Getting Started
+
+Clone:
+
+```bash id="run001"
+git clone https://github.com/Venom589/zanzibar-lite.git
+cd zanzibar-lite
+```
+
+Install:
+
+```bash id="run002"
+npm install
+```
+
+Run:
+
+```bash id="run003"
+npm run dev
+```
+
+---
+
+## 🧪 Testing
+
+```bash id="test001"
+npm test
+```
+
+---
+
+## ⚡ Performance Considerations
+
+* Cache frequent checks using Redis
+* Avoid deep recursive calls (limit traversal depth)
+* Precompute derived relationships where possible
+* Use indexed queries on relation tuples
+
+---
+
+## 🚧 Future Enhancements
+
+* 🔁 Graph traversal optimization (BFS/DFS tuning)
+* ⚡ Redis caching layer
+* 📜 Policy DSL (Zanzibar-style schema language)
+* 🌐 Multi-tenant architecture
+* 📊 Admin UI for relationship management
+
+---
+
+## 🧩 Real-World Use Cases
+
+* Google Docs-style sharing system
+* SaaS multi-tenant platforms
+* Repository access systems
+* Enterprise IAM solutions
+
+---
+
+## 📚 Inspiration
+
+* Google Zanzibar — Google’s global authorization system
+* Relationship-Based Access Control (ReBAC)
+
+---
+
+## 🤝 Contributing
+
+PRs are welcome. Open an issue before major changes.
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 👨‍💻 Author
+
+**Project maintained by developer**
+
+---
+
+## ⭐ Final Note
+
+This project demonstrates **real-world authorization system design**, not just CRUD logic.
+
+Understanding and explaining this system clearly puts you in the **top tier of backend engineers**.
